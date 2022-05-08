@@ -11,26 +11,23 @@ using namespace std;
 #define s second
 #define pb push_back
 
-// Compara dois pares a partir do primeiro valor da tupla e ordena através do maior
 bool sort_comparison(pair<int, int>& pair1, pair<int, int>& pair2);
 
-// Ordena as preferências (decrescente) para facilitar o Stable Matching
 vector<vector<pair<int, int>>> sort_preferences(int v, vector<vector<int>> preferences);
 
-// Verifica se é uma pessoa no grafo
-bool valid_people(int v, pair<int, int> pos, vector<vector<char>> graph);
-
-// Verifica se é uma bicicleta no grafo
 bool valid_bike(int v, pair<int, int> pos, vector<vector<char>> graph);
 
-// Calcula se o movimento é válido dentro do grid
-bool valid_mov(int n, int m, vector<vector<char>> graph, pair<int, int> current);
+map<int, pair<int, int>> find_bikes_coords(int v, int n, int m, vector<vector<char>> graph);
 
-// Calcula as distâncias e ordena de maneira decrescente para o Stable Matching
+vector<char> find_available_peoples(int v);
+
+bool valid_moviment(int n, int m, vector<vector<char>> graph, vector<vector<bool>> visited, pair<int, int> node);
+
+pair<int, char> calculate_distance(int n, int m, vector<vector<char>> graph, pair<int, int> source, char destination);
+
 vector<vector<pair<int, char>>> sort_distances(int v, int n, int m, vector<vector<char>> graph);
 
-// Realiza o matching das entradas
-map<int, char> stable_matching(
+map<char, int> stable_matching(
     int v,
     vector<vector<pair<int, int>>> sorted_preferences,
     vector<vector<pair<int, char>>> sorted_distances
@@ -75,46 +72,40 @@ int main() { _
     vector<vector<pair<int, int>>> sorted_preferences = sort_preferences(v, preferences);
     vector<vector<pair<int, char>>> sorted_distances = sort_distances(v, n, m, graph);
 
-    cout << "Preferencias das pessoas:" << endl;
+    // cout << "Preferencias das pessoas:" << endl;
 
-    for(int i = 0; i < v; i++) {
-        for(int j = 0; j < v; j++) {
-            cout << "Preferencia: " << sorted_preferences[i][j].f
-                 << " - Bicicleta: " << sorted_preferences[i][j].s
-                 << " - Novo IDX: " << j  << endl;
-        }        
-    }
+    // for(int i = 0; i < v; i++) {
+    //     for(int j = 0; j < v; j++) {
+    //         cout << "Preferencia: " << sorted_preferences[i][j].f
+    //              << " - Bicicleta: " << sorted_preferences[i][j].s
+    //              << " - Novo IDX: " << j  << endl;
+    //     }        
+    // }
 
-    cout << endl << endl <<  "Preferencias das bicicletas:" << endl;
+    // cout << endl <<  "Preferencias das bicicletas:" << endl;
 
-    for(int i = 0; i < v; i++) {
-        for(int j = 0; j < v; j++) {
-            cout << "Distancia: " << sorted_distances[i][j].f
-                 << " - Pessoa: " << sorted_distances[i][j].s
-                 << " - Novo IDX: " << j  << endl;
-        }        
-    }
+    // for(int i = 0; i < v; i++) {
+    //     for(int j = 0; j < v; j++) {
+    //         cout << "Distancia: " << sorted_distances[i][j].f
+    //              << " - Pessoa: " << sorted_distances[i][j].s
+    //              << " - Novo IDX: " << j  << endl;
+    //     }        
+    // }
 
-    map<int, char> matches = stable_matching(v, sorted_preferences, sorted_distances);
+    map<char, int> matches = stable_matching(v, sorted_preferences, sorted_distances);
 
     for(auto const stable_pair : matches) {
-        cout << stable_pair.s << " " << stable_pair.f << endl;
+        cout << stable_pair.f << " " << stable_pair.s << endl;
     }
 
     return 0;
 }
 
-bool sort_comparison(
-    pair<int, int>& pair1,
-    pair<int, int>& pair2
-) {
+bool sort_comparison(pair<int, int>& pair1, pair<int, int>& pair2) {
     return pair1.f > pair2.f;
 }
 
-vector<vector<pair<int, int>>> sort_preferences(
-    int v,
-    vector<vector<int>> preferences
-) {
+vector<vector<pair<int, int>>> sort_preferences(int v, vector<vector<int>> preferences) {
     vector<vector<pair<int, int>>> sorted_preferences;
 
     for(int i = 0; i < v; i++) {
@@ -132,22 +123,13 @@ vector<vector<pair<int, int>>> sort_preferences(
     return sorted_preferences;
 }
 
-bool valid_bike(
-    int v,
-    pair<int, int> pos,
-    vector<vector<char>> graph
-) {
+bool valid_bike(int v, pair<int, int> pos, vector<vector<char>> graph) {
     int pos_to_int = (int)graph[pos.f][pos.s] - 48;
 
     return pos_to_int >= 0 and pos_to_int < v;
 }
 
-map<int, pair<int, int>> find_bikes_coords(
-    int v,
-    int n,
-    int m,
-    vector<vector<char>> graph
-) {
+map<int, pair<int, int>> find_bikes_coords(int v, int n, int m, vector<vector<char>> graph) {
     map<int, pair<int, int>> bikes;
 
     for(int i = 0; i < n; i++) {
@@ -176,13 +158,7 @@ vector<char> find_available_peoples(int v) {
     return available_peoples;
 }
 
-bool valid_moviment(
-    int n,
-    int m,
-    vector<vector<char>> graph,
-    vector<vector<bool>> visited,
-    pair<int, int> node
-) {
+bool valid_moviment(int n, int m, vector<vector<char>> graph, vector<vector<bool>> visited, pair<int, int> node) {
     return node.f >= 0
         and node.s >= 0
         and node.f < n
@@ -191,13 +167,7 @@ bool valid_moviment(
         and !visited[node.f][node.s];
 }
 
-pair<int, char> calculate_distance(
-    int n,
-    int m,
-    vector<vector<char>> graph,
-    pair<int, int> source,
-    char destination
-) {
+pair<int, char> calculate_distance(int n, int m, vector<vector<char>> graph, pair<int, int> source, char destination) {
     pair<int, char> distance_index;
 
     vector<pair<int, int>> moviment = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
@@ -223,7 +193,7 @@ pair<int, char> calculate_distance(
                     distance_index.f = layer[new_node.f][new_node.s];
                     distance_index.s = destination;
 
-                    while(!queue.empty()) queue.pop();
+                    return distance_index;
                 }
             }
         }
@@ -232,12 +202,7 @@ pair<int, char> calculate_distance(
     return distance_index;
 }
 
-vector<vector<pair<int, char>>> sort_distances(
-    int v,
-    int n,
-    int m,
-    vector<vector<char>> graph
-) {
+vector<vector<pair<int, char>>> sort_distances(int v, int n, int m, vector<vector<char>> graph) {
     vector<vector<pair<int, char>>> sorted_distances;
 
     vector<char> available_peoples = find_available_peoples(v);
@@ -248,7 +213,6 @@ vector<vector<pair<int, char>>> sort_distances(
 
         for(int i = 0; i < v; i++) {
             pair<int, char> distance_index = calculate_distance(n, m, graph, bike.s, available_peoples[i]);
-
             temp.pb(distance_index);
         }
 
@@ -258,7 +222,7 @@ vector<vector<pair<int, char>>> sort_distances(
     return sorted_distances;
 }
 
-map<int, char> stable_matching(
+map<char, int> stable_matching(
     int v,
     vector<vector<pair<int, int>>> sorted_preferences,
     vector<vector<pair<int, char>>> sorted_distances
@@ -311,5 +275,11 @@ map<int, char> stable_matching(
         }
     }
 
-    return matches;
+    map<char, int> sorted_matches;
+
+    for(auto const pair : matches) {
+        sorted_matches[pair.s] = pair.f;
+    }
+
+    return sorted_matches;
 }
