@@ -11,22 +11,54 @@ using namespace std;
 #define s second
 #define pb push_back
 
+// Redefine a função de comparação da função sort para ordernar pares em ordem decrescente
 bool sort_comparison(pair<int, int>& pair1, pair<int, int>& pair2);
 
+/*
+    Ordena as preferências dos visitantes, criando uma matriz de pares que contém
+    preferência do visitante em relação a bicicleta e o identificador daquela bicicleta
+    (caso o identificador não fosse salvo, a referência ao identificador da bicicleta
+    seria perdida, por isso ele é salvo como um atributo e, assim, a ordenação pode ser feita)
+*/
 vector<vector<pair<int, int>>> sort_preferences(int v, vector<vector<int>> preferences);
 
+/*
+    Verifica se a célula passada como parâmetro pode ser navegável (não foi visitada, 
+    não é um obstáculo, não supera os limites do mapa, etc)
+*/
 bool valid_moviment(int n, int m, vector<vector<char>> graph, vector<vector<bool>> visited, pair<int, int> node);
 
+/* Verifica se a célula passada como parâmetro representa um visitante */
 bool is_visitor(char coord);
 
+/*
+    Calcula as distâncias entre a bicicleta passada como fonte (source) e os visitantes
+    presentes no mapa. O retorno é um vetor onde o valor do index i representa a distância
+    da bicicleta source até o visitante i.
+*/
 vector<int> bfs(int v, int n, int m, vector<vector<char>> graph, pair<int, int> source);
 
-bool valid_bike(int v, pair<int, int> pos, vector<vector<char>> graph);
+// Verifica se a célula passada como parâmetro representa uma bicicleta
+bool is_bike(char coord);
 
+/*
+    Percorre o mapa e identifica as células do mapa que contém bicicletas e salva essas
+    células em um mapa de pares, para facilitar o cálculo das distâncias
+*/ 
 map<int, pair<int, int>> find_bikes_coords(int v, int n, int m, vector<vector<char>> graph);
 
+/*
+    Busca a posição de todas as bicicletas no mapa, percorre o mapa identificando as distâncias
+    entre essas bicicletas e as pessoas no mapa e, por fim, concatena os vetores de distância em
+    uma matriz, criando a tabela de preferências para as bicicletas
+*/
 vector<vector<int>> sort_distances(int v, int n, int m, vector<vector<char>> graph);
 
+/*
+    Recebe instâncias das tabelas de preferência dos visitantes e das bicicletas e 
+    executa o algoritmo de Gale-Shapley, retornando um emparelhamento estável que
+    respeite os critérios estabelecidos pelo problema
+*/
 map<char, int> stable_matching(
     int v,
     vector<vector<pair<int, int>>> sorted_preferences,
@@ -53,6 +85,7 @@ int main() { _
     vector<vector<char>> graph(n, vector<char>(m));
     vector<vector<int>> preferences(v, vector<int>(v));
 
+    // Lê o mapa e a tabela de preferências não ordenada do arquivo
     for(int i = 0; i < n; i++) {
         getline(cin, input);
         istringstream map(input);
@@ -74,27 +107,8 @@ int main() { _
     // Ordena as preferências das pessoas de maneira decrescente (matriz de preferência das pessoas)
     vector<vector<pair<int, int>>> sorted_preferences = sort_preferences(v, preferences);
 
-    // Ordena as distâncias das bicicletas às pessoas ("matriz de preferência" das bicicletas)
+    // Cria e ordena a tabela das distâncias das bicicletas às pessoas ("matriz de preferência" das bicicletas)
     vector<vector<int>> sorted_distances = sort_distances(v, n, m, graph);
-
-    // cout << "Preferencias das pessoas:" << endl;
-    // for(int i = 0; i < v; i++) {
-    //     cout << (char)(i + 97) << endl;
-    //     for(int j = 0; j < v; j++) {
-    //         cout << " Preferencia: " << sorted_preferences[i][j].f
-    //              << " - Bicicleta: " << sorted_preferences[i][j].s
-    //              << " - IDX: " << j  << endl;
-    //     }        
-    // }
-
-    // cout << endl <<  "Preferencias das bicicletas:" << endl;
-    // for(int i = 0; i < v; i++) {
-    //     cout << i << endl;
-    //     for(int j = 0; j < v; j++) {
-    //         cout << " Distancia: " << sorted_distances[i][j]
-    //              << " - Pessoa: " << (char)(j + 97) << endl;
-    //     }        
-    // }
 
     /*
         Calcula o Stable Matching a partir do algoritmo de Gale-Shapley
@@ -120,11 +134,14 @@ vector<vector<pair<int, int>>> sort_preferences(int v, vector<vector<int>> prefe
         vector<pair<int, int>> temp;
 
         for(int j = 0; j < v; j++) {
+            // Insere o "valor" da preferência e a posição original da bicicleta (identificador) no par
             temp.pb(pair<int, int>(preferences[i][j], j));
         }
 
+        // Ordena o vetor de pares a partir do valor da preferência
         sort(temp.begin(), temp.end(), sort_comparison);
 
+        // Insere o vetor ordenado na tabela
         sorted_preferences.pb(temp);
     }
 
@@ -132,6 +149,7 @@ vector<vector<pair<int, int>>> sort_preferences(int v, vector<vector<int>> prefe
 }
 
 bool valid_moviment(int n, int m, vector<vector<char>> graph, vector<vector<bool>> visited, pair<int, int> node) {
+    // Faz o teste para avaliar se essa posição no grafo é navegável ou não
     return node.f >= 0
         and node.s >= 0
         and node.f < n
@@ -141,34 +159,55 @@ bool valid_moviment(int n, int m, vector<vector<char>> graph, vector<vector<bool
 }
 
 bool is_visitor(char coord) {
+    // Converte a coordenada para inteiro
     int parsed_coord = (int)(coord - 97);
 
+    /*
+        Como visitantes vão de "a" a "j", é possível converter para inteiro e subtrair 97 
+        (valor do caractere "a" na tabela ASCII), obendo um novo range de 0 a 9, caso for
+        um visitante
+    */
     return (parsed_coord >= 0 && parsed_coord <= 9);
 }
 
 vector<int> bfs(int v, int n, int m, vector<vector<char>> graph, pair<int, int> source) {
     vector<int> distances(v);
 
+    // Vetor de possíveis movimentos dentro do grafo
     vector<pair<int, int>> moviment = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+
+    // Fila que armazena as posições que ainda não foram exploradas no grafo
     queue<pair<int, int>> queue;
 
+    // Matriz que armazena quais células da matriz já foram visitadas
     vector<vector<bool>> visited(n, vector<bool>(m, false));
+    // Vetor com as camadas geradas pela BFS (distância mínima entre uma célula e a fonte)
     vector<vector<int>> layer(n, vector<int>(m, 0));
 
     queue.push(source); visited[source.f][source.s] = true; layer[source.f][source.s] = 0;
 
     while(!queue.empty()) {
+        // Pega o primeiro elemento da fila e o remove
         pair<int, int> node = queue.front(); queue.pop();
 
         for(auto new_node : moviment) {
+            // "Anda" dentro do grafo através do vetor de movimentos
             new_node.f += node.f; new_node.s += node.s;
 
+            /* 
+                Se o movimento for possível ele insere a célula na fila, marca o vetor de 
+                visitados e calcula a camada da célula que foi visitada
+            */
             if(valid_moviment(n, m, graph, visited, new_node)) {
                 queue.push(new_node);
 
                 visited[new_node.f][new_node.s] = true;
                 layer[new_node.f][new_node.s] = layer[node.f][node.s] + 1;
 
+                /*
+                    Se a célula válida for um visitante, insere a distância da bicicleta até esse 
+                    visitante no vetor de distâncias
+                */
                 if(is_visitor(graph[new_node.f][new_node.s])) {
                     int index = (int)(graph[new_node.f][new_node.s] - 97);
                     distances[index] = layer[new_node.f][new_node.s];
@@ -180,21 +219,29 @@ vector<int> bfs(int v, int n, int m, vector<vector<char>> graph, pair<int, int> 
     return distances;
 }
 
-bool valid_bike(int v, pair<int, int> pos, vector<vector<char>> graph) {
-    int pos_to_int = (int)graph[pos.f][pos.s] - 48;
+bool is_bike(char coord) {
+    // Converte a coordenada para inteiro
+    int parsed_coord = (int)(coord - 48);
 
-    return pos_to_int >= 0 and pos_to_int < v;
+    /*
+        Como visitantes vão de "0" a "9", é possível converter para inteiro e subtrair 48 
+        (valor do caractere "0" na tabela ASCII), obendo um novo range de 0 a 9, caso for
+        um visitante
+    */
+    return (parsed_coord >= 0 && parsed_coord <= 9);
 }
 
 map<int, pair<int, int>> find_bikes_coords(int v, int n, int m, vector<vector<char>> graph) {
     map<int, pair<int, int>> bikes;
 
+    // Percorre o mapa buscando por células com bicicletas
     for(int i = 0; i < n; i++) {
         for(int j = 0; j < m; j++) {
             pair<int, int> pos = {i, j};
-            int char_to_int = (int)graph[i][j] - 48;
+            int char_to_int = (int)(graph[i][j] - 48);
 
-            if(valid_bike(v, pos, graph)) {
+            if(is_bike(graph[pos.f][pos.s])) {
+                // Se for bicicleta, insere no mapa as coordenadas daquela bicicleta
                 bikes[char_to_int] = pos;
             }
         }
@@ -206,11 +253,14 @@ map<int, pair<int, int>> find_bikes_coords(int v, int n, int m, vector<vector<ch
 vector<vector<int>> sort_distances(int v, int n, int m, vector<vector<char>> graph) {
     vector<vector<int>> sorted_distances;
 
+    // Computa as coordenadas das bicicletas presentes no mapa
     map<int, pair<int, int>> bikes = find_bikes_coords(v, n, m, graph);
 
     for(auto const bike : bikes) {
+        // Calcula o vetor com as distâncias 
         vector<int> distances = bfs(v, n, m, graph, bike.s);
 
+        // Insere o vetor na tabela de preferências das bicicletas
         sorted_distances.pb(distances);
     }    
 
@@ -225,46 +275,58 @@ map<char, int> stable_matching(
     map<int, char> matches;
 
     queue<int> free_visitors;
+    // Inicializa a matriz de propostas de visitantes às bicicletas com false
     vector<vector<bool>> already_proposed(v, vector<bool>(v, false));
 
+    // Inicializa a lista de visitantes livres com todos os visitantes presentes
     for(int i = 0; i < v; i++) {
         free_visitors.push(i);
     }
 
+    // Enquanto existir algum visitante sem par
     while(!free_visitors.empty()) {
+        // Seleciona um visitante da fila
         int visitor = free_visitors.front(); free_visitors.pop();
-        int bike = -1;
+        int not_proposed_bike = -1;
 
+        // Seleciona uma bicicleta que ele ainda não propôs
         for(int i = 0; i < v; i++) {
             if(!already_proposed[visitor][i]) {
-                bike = i;
+                not_proposed_bike = i;
                 break;
             }
         }
 
-        // cout << (char)(visitor + 97) << " propondo para " << sorted_preferences[visitor][bike].s << "[" << bike << "]" << endl;
+        // Busca o identificador dessa bicicleta na lista de preferências dele
+        int bike_index = sorted_preferences[visitor][not_proposed_bike].s;
 
         map<int, char>::iterator it;
-        it = matches.find(sorted_preferences[visitor][bike].s);
+        it = matches.find(bike_index);
 
+        // Bicicleta com esse identificador não possui par
         if(it == matches.end()) {
-            matches[sorted_preferences[visitor][bike].s] = (char)(visitor + 97);
+            // Forma um par com o visitante selecionado
+            matches[bike_index] = (char)(visitor + 97);
         } else {
             int pair_index = (int)it->s - 97;
 
-            int visitor_distance = sorted_distances[sorted_preferences[visitor][bike].s][visitor];
-            int pair_distance = sorted_distances[sorted_preferences[visitor][bike].s][pair_index];
-            
-            // cout << "visitor: " << (char)(visitor + 97) << " pair: " << it->s << endl;
-            // cout << "d_vis: " << visitor_distance << " d_pair: " << pair_distance << endl;
+            int visitor_distance = sorted_distances[bike_index][visitor];
+            int pair_distance = sorted_distances[bike_index][pair_index];
 
+            // Caso não compara as distâncias entre o visitante e o atual par da bicicleta
             if(visitor_distance < pair_distance) {
-                matches[sorted_preferences[visitor][bike].s] = (char)(visitor + 97);
+                /*
+                    Se a distância do visitante for menor ele forma um par com a bicicleta e 
+                    o antigo par volta para a lista
+                */ 
+                matches[bike_index] = (char)(visitor + 97);
                 free_visitors.push(pair_index);
             } else if(visitor_distance == pair_distance) {
 
+                // Caso as distâncias sejam iguais, compara pelo identificador
                 if(visitor < pair_index) {
-                    matches[sorted_preferences[visitor][bike].s] = (char)(visitor + 97);
+                    // Se o ID do visitante for menor que o do atual par, ele vira o novo par da bicicleta
+                    matches[bike_index] = (char)(visitor + 97);
                     free_visitors.push(pair_index);
                 } else {
                     free_visitors.push(visitor);
@@ -275,9 +337,16 @@ map<char, int> stable_matching(
             }
         }
 
-        already_proposed[visitor][bike] = true;
+        // Independente do que aconteceu, marca que aquele visitante propôs para a bicicleta selecionada
+        already_proposed[visitor][not_proposed_bike] = true;
     }
 
+    /*
+        Para facilitar o acesso ao mapa de emparelhamentos, ele foi declarado como sendo do tipo <int, char>.
+        Assim, é possível acessar diretamente uma bicicleta e verificar se ela tem um par. No entanto, como a
+        resposta pedida pelo enunciada é ordenada pelo ID do visitante, esse trecho inverte a ordem do par, 
+        aproveitando da ordenação natural do map 
+    */
     map<char, int> sorted_matches;
 
     for(auto const pair : matches) {
