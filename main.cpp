@@ -87,15 +87,15 @@ int main() { _
     //     }        
     // }
 
-    // cout << endl <<  "Preferencias das bicicletas:" << endl;
-    // for(int i = 0; i < v; i++) {
-    //     cout << i << endl;
-    //     for(int j = 0; j < v; j++) {
-    //         cout << " Distancia: " << sorted_distances[i][j].f
-    //              << " - Pessoa: " << sorted_distances[i][j].s
-    //              << " - IDX: " << j  << endl;
-    //     }        
-    // }
+    cout << endl <<  "Preferencias das bicicletas:" << endl;
+    for(int i = 0; i < v; i++) {
+        cout << i << endl;
+        for(int j = 0; j < v; j++) {
+            cout << " Distancia: " << sorted_distances[i][j].f
+                 << " - Pessoa: " << sorted_distances[i][j].s
+                 << " - IDX: " << j  << endl;
+        }        
+    }
 
     /*
         Calcula o Stable Matching a partir do algoritmo de Gale-Shapley
@@ -243,6 +243,8 @@ map<char, int> stable_matching(
             }
         }
 
+        // cout << (char)(visitor + 97) << " propondo para " << sorted_preferences[visitor][bike].s << "[" << bike << "]" << endl;
+
         map<int, char>::iterator it;
         it = matches.find(sorted_preferences[visitor][bike].s);
 
@@ -251,8 +253,19 @@ map<char, int> stable_matching(
         } else {
             int pair_index = (int)it->s - 97;
 
-            int visitor_distance = sorted_distances[bike][visitor].f;
-            int pair_distance = sorted_distances[bike][it->s].f;
+            int visitor_distance = -1;
+            int pair_distance = sorted_distances[sorted_preferences[visitor][bike].s][pair_index].f;
+
+            for(int i = 0; i < v; i++) {
+                if(sorted_distances[sorted_preferences[visitor][bike].s][i].s == (char)(visitor + 97))
+                    visitor_distance = sorted_distances[sorted_preferences[visitor][bike].s][i].f;
+
+                if(sorted_distances[sorted_preferences[visitor][bike].s][i].s == it->s)
+                    pair_distance = sorted_distances[sorted_preferences[visitor][bike].s][i].f;
+            }
+            
+            // cout << "visitor: " << (char)(visitor + 97) << " pair: " << it->s << endl;
+            // cout << "d_vis: " << visitor_distance << " d_pair: " << pair_distance << endl;
 
             if(visitor_distance < pair_distance) {
                 matches[sorted_preferences[visitor][bike].s] = (char)(visitor + 97);
@@ -273,45 +286,6 @@ map<char, int> stable_matching(
 
         already_proposed[visitor][bike] = true;
     }
-
-    // while(free_count > 0) {
-    //     for(int i = 0; i < v; i++) {
-    //         if(free_people[i]) {
-    //             free_guy = i;
-    //             break;
-    //         }
-    //     }
-
-    //     for(int i = 0; i < v; i++) {
-    //         if(!already_proposed[free_guy][i]) {
-    //             map<int, char>::iterator it;
-    //             it = matches.find(sorted_preferences[free_guy][i].s);
-                
-    //             if (it == matches.end()) {
-    //                 matches[sorted_preferences[free_guy][i].s] = (char)free_guy + 97;
-
-    //                 free_people[free_guy] = false;                    
-    //                 already_proposed[free_guy][i] = true;
-                    
-    //                 free_count--;
-
-    //                 break;
-    //             } else {
-    //                 int distance_to_current = sorted_distances[i][it->s].f;
-    //                 int distance_to_new = sorted_distances[i][free_guy].f;
-
-    //                 if(distance_to_new < distance_to_current) {
-    //                     matches[i] = (char)free_guy + 97;
-
-    //                     free_people[it->s] = true;
-    //                     free_people[free_guy] = false;
-    //                 }
-    //             }
-
-    //             already_proposed[free_guy][i] = true;
-    //         }
-    //     }
-    // }
 
     map<char, int> sorted_matches;
 
