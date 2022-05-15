@@ -15,15 +15,15 @@ bool sort_comparison(pair<int, int>& pair1, pair<int, int>& pair2);
 
 vector<vector<pair<int, int>>> sort_preferences(int v, vector<vector<int>> preferences);
 
+bool valid_moviment(int n, int m, vector<vector<char>> graph, vector<vector<bool>> visited, pair<int, int> node);
+
+vector<pair<int, char>> bfs(int n, int m, vector<vector<char>> graph, pair<int, int> source);
+
 bool valid_bike(int v, pair<int, int> pos, vector<vector<char>> graph);
 
 map<int, pair<int, int>> find_bikes_coords(int v, int n, int m, vector<vector<char>> graph);
 
-vector<char> find_available_peoples(int v);
-
-bool valid_moviment(int n, int m, vector<vector<char>> graph, vector<vector<bool>> visited, pair<int, int> node);
-
-pair<int, char> calculate_distance(int n, int m, vector<vector<char>> graph, pair<int, int> source, char destination);
+bool is_visitor(char coord);
 
 vector<vector<pair<int, char>>> sort_distances(int v, int n, int m, vector<vector<char>> graph);
 
@@ -36,6 +36,7 @@ map<char, int> stable_matching(
 int main() { _
     int v, n, m;
 
+    // Recebe as entradas do arquivo de entrada
     string input;
     getline(cin, input);
     istringstream size(input);
@@ -48,6 +49,7 @@ int main() { _
     dimensions >> n;
     dimensions >> m;
 
+    // Declara o mapa (grafo) dado pelas entradas e a matriz de preferências das pessoas
     vector<vector<char>> graph(n, vector<char>(m));
     vector<vector<int>> preferences(v, vector<int>(v));
 
@@ -69,29 +71,36 @@ int main() { _
         }
     }
 
+    // Ordena as preferências das pessoas de maneira decrescente (matriz de preferência das pessoas)
     vector<vector<pair<int, int>>> sorted_preferences = sort_preferences(v, preferences);
+
+    // Ordena as distâncias das bicicletas às pessoas ("matriz de preferência" das bicicletas)
     vector<vector<pair<int, char>>> sorted_distances = sort_distances(v, n, m, graph);
 
     // cout << "Preferencias das pessoas:" << endl;
-
     // for(int i = 0; i < v; i++) {
+    //     cout << (char)(i + 97) << endl;
     //     for(int j = 0; j < v; j++) {
-    //         cout << "Preferencia: " << sorted_preferences[i][j].f
+    //         cout << " Preferencia: " << sorted_preferences[i][j].f
     //              << " - Bicicleta: " << sorted_preferences[i][j].s
-    //              << " - Novo IDX: " << j  << endl;
+    //              << " - IDX: " << j  << endl;
     //     }        
     // }
 
     // cout << endl <<  "Preferencias das bicicletas:" << endl;
-
     // for(int i = 0; i < v; i++) {
+    //     cout << i << endl;
     //     for(int j = 0; j < v; j++) {
-    //         cout << "Distancia: " << sorted_distances[i][j].f
+    //         cout << " Distancia: " << sorted_distances[i][j].f
     //              << " - Pessoa: " << sorted_distances[i][j].s
-    //              << " - Novo IDX: " << j  << endl;
+    //              << " - IDX: " << j  << endl;
     //     }        
     // }
 
+    /*
+        Calcula o Stable Matching a partir do algoritmo de Gale-Shapley
+        e exibe os resultados no for em seguida.
+    */
     map<char, int> matches = stable_matching(v, sorted_preferences, sorted_distances);
 
     for(auto const stable_pair : matches) {
@@ -123,6 +132,47 @@ vector<vector<pair<int, int>>> sort_preferences(int v, vector<vector<int>> prefe
     return sorted_preferences;
 }
 
+bool valid_moviment(int n, int m, vector<vector<char>> graph, vector<vector<bool>> visited, pair<int, int> node) {
+    return node.f >= 0
+        and node.s >= 0
+        and node.f < n
+        and node.s < m
+        and graph[node.f][node.s] != '-'
+        and !visited[node.f][node.s];
+}
+
+vector<pair<int, char>> bfs(int n, int m, vector<vector<char>> graph, pair<int, int> source) {
+    vector<pair<int, char>> distances;
+
+    vector<pair<int, int>> moviment = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+    queue<pair<int, int>> queue;
+
+    vector<vector<bool>> visited(n, vector<bool>(m, false));
+    vector<vector<int>> layer(n, vector<int>(m, 0));
+
+    queue.push(source); visited[source.f][source.s] = true; layer[source.f][source.s] = 0;
+
+    while(!queue.empty()) {
+        pair<int, int> node = queue.front(); queue.pop();
+
+        for(auto new_node : moviment) {
+            new_node.f += node.f; new_node.s += node.s;
+
+            if(valid_moviment(n, m, graph, visited, new_node)) {
+                queue.push(new_node);
+
+                visited[new_node.f][new_node.s] = true;
+                layer[new_node.f][new_node.s] = layer[node.f][node.s] + 1;
+
+                if(is_visitor(graph[new_node.f][new_node.s]))
+                    distances.pb(pair<int, char>(layer[new_node.f][new_node.s], graph[new_node.f][new_node.s]));
+            }
+        }
+    }
+
+    return distances;
+}
+
 bool valid_bike(int v, pair<int, int> pos, vector<vector<char>> graph) {
     int pos_to_int = (int)graph[pos.f][pos.s] - 48;
 
@@ -146,77 +196,23 @@ map<int, pair<int, int>> find_bikes_coords(int v, int n, int m, vector<vector<ch
     return bikes;
 }
 
-vector<char> find_available_peoples(int v) {
-    vector<char> available_peoples;
+bool is_visitor(char coord) {
+    int parsed_coord = (int)coord - 97;
 
-    for(int i = 0; i < v; i++) {
-        char people = (char)97 + i;
-
-        available_peoples.pb(people);
-    }
-
-    return available_peoples;
-}
-
-bool valid_moviment(int n, int m, vector<vector<char>> graph, vector<vector<bool>> visited, pair<int, int> node) {
-    return node.f >= 0
-        and node.s >= 0
-        and node.f < n
-        and node.s < m
-        and graph[node.f][node.s] != '-'
-        and !visited[node.f][node.s];
-}
-
-pair<int, char> calculate_distance(int n, int m, vector<vector<char>> graph, pair<int, int> source, char destination) {
-    pair<int, char> distance_index;
-
-    vector<pair<int, int>> moviment = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
-    queue<pair<int, int>> queue;
-
-    vector<vector<bool>> visited(n, vector<bool>(m, false));
-    vector<vector<int>> layer(n, vector<int>(m, 0));
-
-    queue.push(source); visited[source.f][source.s] = true; layer[source.f][source.s] = 0;
-
-    while(!queue.empty()) {
-        pair<int, int> node = queue.front(); queue.pop();
-
-        for(auto new_node : moviment) {
-            new_node.f += node.f; new_node.s += node.s;
-
-            if(valid_moviment(n, m, graph, visited, new_node)) {
-                queue.push(new_node);
-
-                visited[new_node.f][new_node.s] = true; layer[new_node.f][new_node.s] = layer[node.f][node.s] + 1;
-
-                if(graph[new_node.f][new_node.s] == destination) {
-                    distance_index.f = layer[new_node.f][new_node.s];
-                    distance_index.s = destination;
-
-                    return distance_index;
-                }
-            }
-        }
-    }
-
-    return distance_index;
+    return (parsed_coord >= 0 && parsed_coord <= 9);
 }
 
 vector<vector<pair<int, char>>> sort_distances(int v, int n, int m, vector<vector<char>> graph) {
     vector<vector<pair<int, char>>> sorted_distances;
 
-    vector<char> available_peoples = find_available_peoples(v);
     map<int, pair<int, int>> bikes = find_bikes_coords(v, n, m, graph);
 
     for(auto const bike : bikes) {
-        vector<pair<int, char>> temp;
+        vector<pair<int, char>> distances = bfs(n, m, graph, bike.s);
 
-        for(int i = 0; i < v; i++) {
-            pair<int, char> distance_index = calculate_distance(n, m, graph, bike.s, available_peoples[i]);
-            temp.pb(distance_index);
-        }
+        sort(distances.begin(), distances.end());
 
-        sorted_distances.pb(temp);
+        sorted_distances.pb(distances);
     }    
 
     return sorted_distances;
@@ -229,51 +225,93 @@ map<char, int> stable_matching(
 ) {
     map<int, char> matches;
 
-    int free_count = v;
-
-    vector<bool> free_people(v, true);
+    queue<int> free_visitors;
     vector<vector<bool>> already_proposed(v, vector<bool>(v, false));
 
-    int free_guy = -1;
+    for(int i = 0; i < v; i++) {
+        free_visitors.push(i);
+    }
 
-    while(free_count > 0) {
+    while(!free_visitors.empty()) {
+        int visitor = free_visitors.front(); free_visitors.pop();
+        int bike = -1;
+
         for(int i = 0; i < v; i++) {
-            if(free_people[i]) {
-                free_guy = i;
+            if(!already_proposed[visitor][i]) {
+                bike = i;
                 break;
             }
         }
 
-        for(int i = 0; i < v; i++) {
-            if(!already_proposed[free_guy][i]) {
-                map<int, char>::iterator it;
-                it = matches.find(sorted_preferences[free_guy][i].s);
-                
-                if (it == matches.end()) {
-                    matches[sorted_preferences[free_guy][i].s] = (char)free_guy + 97;
+        map<int, char>::iterator it;
+        it = matches.find(sorted_preferences[visitor][bike].s);
 
-                    free_people[free_guy] = false;                    
-                    already_proposed[free_guy][i] = true;
-                    
-                    free_count--;
+        if(it == matches.end()) {
+            matches[sorted_preferences[visitor][bike].s] = (char)(visitor + 97);
+        } else {
+            int pair_index = (int)it->s - 97;
 
-                    break;
+            int visitor_distance = sorted_distances[bike][visitor].f;
+            int pair_distance = sorted_distances[bike][it->s].f;
+
+            if(visitor_distance < pair_distance) {
+                matches[sorted_preferences[visitor][bike].s] = (char)(visitor + 97);
+                free_visitors.push(pair_index);
+            } else if(visitor_distance == pair_distance) {
+
+                if(visitor < pair_index) {
+                    matches[sorted_preferences[visitor][bike].s] = (char)(visitor + 97);
+                    free_visitors.push(pair_index);
                 } else {
-                    int distance_to_current = sorted_distances[i][it->s].f;
-                    int distance_to_new = sorted_distances[i][free_guy].f;
-
-                    if(distance_to_new < distance_to_current) {
-                        matches[i] = (char)free_guy + 97;
-
-                        free_people[it->s] = true;
-                        free_people[free_guy] = false;
-                    }
+                    free_visitors.push(visitor);
                 }
 
-                already_proposed[free_guy][i] = true;
+            } else {
+                free_visitors.push(visitor);
             }
         }
+
+        already_proposed[visitor][bike] = true;
     }
+
+    // while(free_count > 0) {
+    //     for(int i = 0; i < v; i++) {
+    //         if(free_people[i]) {
+    //             free_guy = i;
+    //             break;
+    //         }
+    //     }
+
+    //     for(int i = 0; i < v; i++) {
+    //         if(!already_proposed[free_guy][i]) {
+    //             map<int, char>::iterator it;
+    //             it = matches.find(sorted_preferences[free_guy][i].s);
+                
+    //             if (it == matches.end()) {
+    //                 matches[sorted_preferences[free_guy][i].s] = (char)free_guy + 97;
+
+    //                 free_people[free_guy] = false;                    
+    //                 already_proposed[free_guy][i] = true;
+                    
+    //                 free_count--;
+
+    //                 break;
+    //             } else {
+    //                 int distance_to_current = sorted_distances[i][it->s].f;
+    //                 int distance_to_new = sorted_distances[i][free_guy].f;
+
+    //                 if(distance_to_new < distance_to_current) {
+    //                     matches[i] = (char)free_guy + 97;
+
+    //                     free_people[it->s] = true;
+    //                     free_people[free_guy] = false;
+    //                 }
+    //             }
+
+    //             already_proposed[free_guy][i] = true;
+    //         }
+    //     }
+    // }
 
     map<char, int> sorted_matches;
 
