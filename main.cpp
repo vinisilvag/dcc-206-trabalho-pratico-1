@@ -12,7 +12,7 @@ using namespace std;
 #define pb push_back
 
 // Redefine a função de comparação da função sort para ordernar pares em ordem decrescente
-bool sort_comparison(pair<int, int>& pair1, pair<int, int>& pair2);
+bool sort_comparison(pair<int, int> &pair1, pair<int, int> &pair2);
 
 /*
     Ordena as preferências dos visitantes, criando uma matriz de pares que contém
@@ -20,13 +20,13 @@ bool sort_comparison(pair<int, int>& pair1, pair<int, int>& pair2);
     (caso o identificador não fosse salvo, a referência ao identificador da bicicleta
     seria perdida, por isso ele é salvo como um atributo e, assim, a ordenação pode ser feita)
 */
-vector<vector<pair<int, int>>> sort_preferences(int v, vector<vector<int>> preferences);
+vector<vector<pair<int, int>>> sort_preferences(int v, vector<vector<int>> &preferences);
 
 /*
     Verifica se a célula passada como parâmetro pode ser navegável (não foi visitada, 
     não é um obstáculo, não supera os limites do mapa, etc)
 */
-bool valid_moviment(int n, int m, vector<vector<char>> graph, vector<vector<bool>> visited, pair<int, int> cell);
+bool valid_moviment(int n, int m, vector<vector<char>> &graph, vector<vector<bool>> &visited, pair<int, int> cell);
 
 /* Verifica se a célula passada como parâmetro representa um visitante */
 bool is_visitor(char coord);
@@ -36,7 +36,7 @@ bool is_visitor(char coord);
     presentes no mapa. O retorno é um vetor onde o valor do index i representa a distância
     da bicicleta source até o visitante i.
 */
-vector<int> bfs(int v, int n, int m, vector<vector<char>> graph, pair<int, int> source);
+vector<int> bfs(int v, int n, int m, vector<vector<char>> &graph, pair<int, int> source);
 
 // Verifica se a célula passada como parâmetro representa uma bicicleta
 bool is_bike(char coord);
@@ -45,14 +45,14 @@ bool is_bike(char coord);
     Percorre o mapa e identifica as células do mapa que contém bicicletas e salva essas
     células em um mapa de pares, para facilitar o cálculo das distâncias
 */ 
-map<int, pair<int, int>> find_bikes_coords(int n, int m, vector<vector<char>> graph);
+map<int, pair<int, int>> find_bikes_coords(int n, int m, vector<vector<char>> &graph);
 
 /*
     Busca a posição de todas as bicicletas no mapa, percorre o mapa identificando as distâncias
     entre essas bicicletas e as pessoas no mapa e, por fim, concatena os vetores de distância em
     uma matriz, criando a tabela de preferências para as bicicletas
 */
-vector<vector<int>> sort_distances(int v, int n, int m, vector<vector<char>> graph);
+vector<vector<int>> sort_distances(int v, int n, int m, vector<vector<char>> &graph);
 
 /*
     Recebe instâncias das tabelas de preferência dos visitantes e das bicicletas e 
@@ -61,8 +61,8 @@ vector<vector<int>> sort_distances(int v, int n, int m, vector<vector<char>> gra
 */
 map<char, int> stable_matching(
     int v,
-    vector<vector<pair<int, int>>> sorted_preferences,
-    vector<vector<int>> sorted_distances
+    vector<vector<pair<int, int>>> &sorted_preferences,
+    vector<vector<int>> &sorted_distances
 );
 
 int main() { _
@@ -123,11 +123,11 @@ int main() { _
     return 0;
 }
 
-bool sort_comparison(pair<int, int>& pair1, pair<int, int>& pair2) {
+bool sort_comparison(pair<int, int> &pair1, pair<int, int> &pair2) {
     return pair1.f > pair2.f;
 }
 
-vector<vector<pair<int, int>>> sort_preferences(int v, vector<vector<int>> preferences) {
+vector<vector<pair<int, int>>> sort_preferences(int v, vector<vector<int>> &preferences) {
     vector<vector<pair<int, int>>> sorted_preferences;
 
     for(int i = 0; i < v; i++) {
@@ -148,7 +148,7 @@ vector<vector<pair<int, int>>> sort_preferences(int v, vector<vector<int>> prefe
     return sorted_preferences;
 }
 
-bool valid_moviment(int n, int m, vector<vector<char>> graph, vector<vector<bool>> visited, pair<int, int> cell) {
+bool valid_moviment(int n, int m, vector<vector<char>> &graph, vector<vector<bool>> &visited, pair<int, int> cell) {
     // Faz o teste para avaliar se essa posição no grafo é navegável ou não
     return cell.f >= 0
         and cell.s >= 0
@@ -170,14 +170,14 @@ bool is_visitor(char coord) {
     return parsed_coord >= 0 and parsed_coord <= 9;
 }
 
-vector<int> bfs(int v, int n, int m, vector<vector<char>> graph, pair<int, int> source) {
+vector<int> bfs(int v, int n, int m, vector<vector<char>> &graph, pair<int, int> source) {
     vector<int> distances(v);
 
     // Vetor de possíveis movimentos dentro do grafo
     vector<pair<int, int>> moviment = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
 
     // Fila que armazena as posições que ainda não foram exploradas no grafo
-    queue<pair<int, int>> queue;
+    queue<pair<int, int>> q;
 
     // Matriz que armazena quais células da matriz já foram visitadas
     vector<vector<bool>> visited(n, vector<bool>(m, false));
@@ -185,16 +185,14 @@ vector<int> bfs(int v, int n, int m, vector<vector<char>> graph, pair<int, int> 
     // Vetor com as camadas geradas pela BFS (distância mínima entre uma célula e a fonte)
     vector<vector<int>> layer(n, vector<int>(m, -1));
 
-    int finded = 0;
-
-    queue.push(source);
+    q.push(source);
     visited[source.f][source.s] = true;
     layer[source.f][source.s] = 0;
 
-    while(!queue.empty()) {
+    while(!q.empty()) {
         // Pega o primeiro elemento da fila e o remove
-        pair<int, int> cell = queue.front();
-        queue.pop();
+        pair<int, int> cell = q.front();
+        q.pop();
 
         for(auto mov : moviment) {
             // "Anda" dentro do grafo através do vetor de movimentos
@@ -205,7 +203,7 @@ vector<int> bfs(int v, int n, int m, vector<vector<char>> graph, pair<int, int> 
                 visitados e calcula a camada da célula que foi visitada
             */
             if(valid_moviment(n, m, graph, visited, new_cell)) {
-                queue.push(new_cell);
+                q.push(new_cell);
                 visited[new_cell.f][new_cell.s] = true;
                 layer[new_cell.f][new_cell.s] = layer[cell.f][cell.s] + 1;
 
@@ -216,12 +214,6 @@ vector<int> bfs(int v, int n, int m, vector<vector<char>> graph, pair<int, int> 
                 if(is_visitor(graph[new_cell.f][new_cell.s])) {
                     int index = (int)(graph[new_cell.f][new_cell.s] - 97);
                     distances[index] = layer[new_cell.f][new_cell.s];
-
-                    finded++;
-
-                    // Se todos os visitantes já tiverem sido encontrados
-                    if(finded == v)
-                        return distances;
                 }
             }
         }
@@ -242,7 +234,7 @@ bool is_bike(char coord) {
     return parsed_coord >= 0 and parsed_coord <= 9;
 }
 
-map<int, pair<int, int>> find_bikes_coords(int n, int m, vector<vector<char>> graph) {
+map<int, pair<int, int>> find_bikes_coords(int n, int m, vector<vector<char>> &graph) {
     map<int, pair<int, int>> bikes;
 
     // Percorre o mapa buscando por células com bicicletas
@@ -260,7 +252,7 @@ map<int, pair<int, int>> find_bikes_coords(int n, int m, vector<vector<char>> gr
     return bikes;
 }
 
-vector<vector<int>> sort_distances(int v, int n, int m, vector<vector<char>> graph) {
+vector<vector<int>> sort_distances(int v, int n, int m, vector<vector<char>> &graph) {
     vector<vector<int>> sorted_distances;
 
     // Computa as coordenadas das bicicletas presentes no mapa
@@ -279,8 +271,8 @@ vector<vector<int>> sort_distances(int v, int n, int m, vector<vector<char>> gra
 
 map<char, int> stable_matching(
     int v,
-    vector<vector<pair<int, int>>> sorted_preferences,
-    vector<vector<int>> sorted_distances
+    vector<vector<pair<int, int>>> &sorted_preferences,
+    vector<vector<int>> &sorted_distances
 ) {
     map<int, char> matches;
 

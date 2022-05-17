@@ -16,7 +16,7 @@ int rand(int a, int b) {
 int main(int argc, char** argv) { 
   srand(atoi(argv[1]));
   
-  const int MX = 60;
+  const int MX = 450;
   int n = MX, m = MX, v = rand(1, min({n, m, 10}));
   cout << v << endl;
   cout << n << " " << m << endl;
