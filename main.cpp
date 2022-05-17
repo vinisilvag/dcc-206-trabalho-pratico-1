@@ -26,7 +26,7 @@ vector<vector<pair<int, int>>> sort_preferences(int v, vector<vector<int>> prefe
     Verifica se a célula passada como parâmetro pode ser navegável (não foi visitada, 
     não é um obstáculo, não supera os limites do mapa, etc)
 */
-bool valid_moviment(int n, int m, vector<vector<char>> graph, vector<vector<bool>> visited, pair<int, int> node);
+bool valid_moviment(int n, int m, vector<vector<char>> graph, vector<vector<bool>> visited, pair<int, int> cell);
 
 /* Verifica se a célula passada como parâmetro representa um visitante */
 bool is_visitor(char coord);
@@ -148,14 +148,14 @@ vector<vector<pair<int, int>>> sort_preferences(int v, vector<vector<int>> prefe
     return sorted_preferences;
 }
 
-bool valid_moviment(int n, int m, vector<vector<char>> graph, vector<vector<bool>> visited, pair<int, int> node) {
+bool valid_moviment(int n, int m, vector<vector<char>> graph, vector<vector<bool>> visited, pair<int, int> cell) {
     // Faz o teste para avaliar se essa posição no grafo é navegável ou não
-    return node.f >= 0
-        and node.s >= 0
-        and node.f < n
-        and node.s < m
-        and graph[node.f][node.s] != '-'
-        and !visited[node.f][node.s];
+    return cell.f >= 0
+        and cell.s >= 0
+        and cell.f < n
+        and cell.s < m
+        and graph[cell.f][cell.s] != '-'
+        and !visited[cell.f][cell.s];
 }
 
 bool is_visitor(char coord) {
@@ -181,8 +181,11 @@ vector<int> bfs(int v, int n, int m, vector<vector<char>> graph, pair<int, int> 
 
     // Matriz que armazena quais células da matriz já foram visitadas
     vector<vector<bool>> visited(n, vector<bool>(m, false));
+
     // Vetor com as camadas geradas pela BFS (distância mínima entre uma célula e a fonte)
-    vector<vector<int>> layer(n, vector<int>(m, 0));
+    vector<vector<int>> layer(n, vector<int>(m, -1));
+
+    int finded = 0;
 
     queue.push(source);
     visited[source.f][source.s] = true;
@@ -190,29 +193,35 @@ vector<int> bfs(int v, int n, int m, vector<vector<char>> graph, pair<int, int> 
 
     while(!queue.empty()) {
         // Pega o primeiro elemento da fila e o remove
-        pair<int, int> node = queue.front();
+        pair<int, int> cell = queue.front();
         queue.pop();
 
         for(auto mov : moviment) {
             // "Anda" dentro do grafo através do vetor de movimentos
-            pair<int, int> new_node = {node.f + mov.f, node.s + mov.s};
+            pair<int, int> new_cell = {cell.f + mov.f, cell.s + mov.s};
 
             /* 
                 Se o movimento for possível ele insere a célula na fila, marca o vetor de 
                 visitados e calcula a camada da célula que foi visitada
             */
-            if(valid_moviment(n, m, graph, visited, new_node)) {
-                queue.push(new_node);
-                visited[new_node.f][new_node.s] = true;
-                layer[new_node.f][new_node.s] = layer[node.f][node.s] + 1;
+            if(valid_moviment(n, m, graph, visited, new_cell)) {
+                queue.push(new_cell);
+                visited[new_cell.f][new_cell.s] = true;
+                layer[new_cell.f][new_cell.s] = layer[cell.f][cell.s] + 1;
 
                 /*
                     Se a célula válida for um visitante, insere a distância da bicicleta até esse 
                     visitante no vetor de distâncias
                 */
-                if(is_visitor(graph[new_node.f][new_node.s])) {
-                    int index = (int)(graph[new_node.f][new_node.s] - 97);
-                    distances[index] = layer[new_node.f][new_node.s];
+                if(is_visitor(graph[new_cell.f][new_cell.s])) {
+                    int index = (int)(graph[new_cell.f][new_cell.s] - 97);
+                    distances[index] = layer[new_cell.f][new_cell.s];
+
+                    finded++;
+
+                    // Se todos os visitantes já tiverem sido encontrados
+                    if(finded == v)
+                        return distances;
                 }
             }
         }
