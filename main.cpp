@@ -26,7 +26,7 @@ vector<vector<pair<int, int>>> sort_preferences(int v, vector<vector<int>> &pref
     Verifica se a célula passada como parâmetro pode ser navegável (não foi visitada, 
     não é um obstáculo, não supera os limites do mapa, etc)
 */
-bool valid_moviment(int n, int m, vector<vector<char>> &graph, vector<vector<bool>> &visited, pair<int, int> cell);
+bool valid_movement(int n, int m, vector<vector<char>> &graph, vector<vector<bool>> &visited, pair<int, int> cell);
 
 /* Verifica se a célula passada como parâmetro representa um visitante */
 bool is_visitor(char coord);
@@ -148,7 +148,7 @@ vector<vector<pair<int, int>>> sort_preferences(int v, vector<vector<int>> &pref
     return sorted_preferences;
 }
 
-bool valid_moviment(int n, int m, vector<vector<char>> &graph, vector<vector<bool>> &visited, pair<int, int> cell) {
+bool valid_movement(int n, int m, vector<vector<char>> &graph, vector<vector<bool>> &visited, pair<int, int> cell) {
     // Faz o teste para avaliar se essa posição no grafo é navegável ou não
     return cell.f >= 0
         and cell.s >= 0
@@ -174,7 +174,7 @@ vector<int> bfs(int v, int n, int m, vector<vector<char>> &graph, pair<int, int>
     vector<int> distances(v);
 
     // Vetor de possíveis movimentos dentro do grafo
-    vector<pair<int, int>> moviment = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+    vector<pair<int, int>> movement = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
 
     // Fila que armazena as posições que ainda não foram exploradas no grafo
     queue<pair<int, int>> q;
@@ -194,7 +194,7 @@ vector<int> bfs(int v, int n, int m, vector<vector<char>> &graph, pair<int, int>
         pair<int, int> cell = q.front();
         q.pop();
 
-        for(auto mov : moviment) {
+        for(auto mov : movement) {
             // "Anda" dentro do grafo através do vetor de movimentos
             pair<int, int> new_cell = {cell.f + mov.f, cell.s + mov.s};
 
@@ -202,7 +202,7 @@ vector<int> bfs(int v, int n, int m, vector<vector<char>> &graph, pair<int, int>
                 Se o movimento for possível ele insere a célula na fila, marca o vetor de 
                 visitados e calcula a camada da célula que foi visitada
             */
-            if(valid_moviment(n, m, graph, visited, new_cell)) {
+            if(valid_movement(n, m, graph, visited, new_cell)) {
                 q.push(new_cell);
                 visited[new_cell.f][new_cell.s] = true;
                 layer[new_cell.f][new_cell.s] = layer[cell.f][cell.s] + 1;
